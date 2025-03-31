@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Pass@123
+      MYSQL_DATABASE: ShareIdea
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  springcrud:
+    image: shareuserimage
+    container_name: userprofilecontainer
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ShareIdea?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Pass@123
+
+volumes:
+  mysql_data:
+
