@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+  # MySQL database
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Pass@123
+      MYSQL_DATABASE: ShareIdea
+    ports:
+      - "3307:3306"  # Expose MySQL on port 3307 on your host machine
+    volumes:
+      - mysql_data:/var/lib/mysql  # Persist MySQL data
+
+  # IDEA-SERVICE (Spring Boot Backend)
+  IDEA-SERVICE:
+    image: sganesh1907/shareideaimage
+    container_name: ideacontainer
+    ports:
+      - "8083:8083"  # Expose IDEA-SERVICE on port 8083
+    depends_on:
+      - mysql  # Ensure MySQL is up before starting IDEA-SERVICE
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ShareIdea?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Pass@123
+
+  # COMMENT-SERVICE (Spring Boot Backend)
+  COMMENT-SERVICE:
+    image: sganesh1907/sharecommentimage
+    container_name: commentcontainer
+    ports:
+      - "8084:8084"  # Expose COMMENT-SERVICE on port 8084
+    depends_on:
+      - mysql  # Ensure MySQL is up before starting COMMENT-SERVICE
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ShareIdea?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Pass@123
+
+  # USERPROFILE-SERVICE (Spring Boot Backend)
+  USERPROFILE-SERVICE:
+    image: sganesh1907/shareuserimage
+    container_name: userprofilecontainer
+    ports:
+      - "8082:8082"  # Expose USERPROFILE-SERVICE on port 8082
+    depends_on:
+      - mysql  # Ensure MySQL is up before starting USERPROFILE-SERVICE
+      - IDEA-SERVICE  # Ensure IDEA-SERVICE is up before starting USERPROFILE-SERVICE
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ShareIdea?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Pass@123
+
+  # MESSAGE-SERVICE (Spring Boot Backend)
+  MESSAGE-SERVICE:
+    image: sganesh1907/sharemessageimage
+    container_name: messagecontainer
+    ports:
+      - "8085:8085"  # Expose MESSAGE-SERVICE on port 8085
+    depends_on:
+      - mysql  # Ensure MySQL is up before starting MESSAGE-SERVICE
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ShareIdea?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Pass@123
+
+  # FRONTEND (React Application)
+  FRONTEND:
+    image: sganesh1907/shareideafrontendimagev2  # Use the image from Docker Hub
+    container_name: react-frontend
+    ports:
+      - "3000:80"  # Map internal port 3000 to external port 3000 for React app
+    depends_on:
+      - IDEA-SERVICE  # Ensure IDEA-SERVICE is available before starting frontend
+      - COMMENT-SERVICE  # Ensure COMMENT-SERVICE is available before starting frontend
+      - USERPROFILE-SERVICE  # Ensure USERPROFILE-SERVICE is available before frontend
+      - MESSAGE-SERVICE  # Ensure MESSAGE-SERVICE is available before frontend
+    environment:
+      REACT_APP_API_URL_IDEA: "http://IDEA-SERVICE:8083"  # Backend IDEA-SERVICE URL for the frontend to communicate
+      REACT_APP_API_URL_COMMENT: "http://COMMENT-SERVICE:8084"  # Backend COMMENT-SERVICE URL
+      REACT_APP_API_URL_USER: "http://USERPROFILE-SERVICE:8082"  # Backend USERPROFILE-SERVICE URL
+      REACT_APP_API_URL_MESSAGE: "http://MESSAGE-SERVICE:8085"  # Backend MESSAGE-SERVICE URL
+    networks:
+      - app-network  # Connect the frontend to the app network
+
+volumes:
+  mysql_data:  # Persist MySQL data
+
+networks:
+  app-network:
+    driver: bridge  # Use the bridge driver for Docker networking
